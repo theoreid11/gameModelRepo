@@ -1,4 +1,3 @@
-
 import random 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -75,11 +74,13 @@ class Player:
         self.yoku = 3  # Starting yoku
         self.pioneer_points = 6  # Starting pioneer points
         self.skull_tokens = 0  # Pity system
-        # Materials
+        # Materials - Updated to include all rarities
         self.materials = {
-            'uncommon': 0,
+            'legendary': 0,
+            'epic': 0,
             'rare': 0,
-            'epic': 0
+            'uncommon': 0,
+            'common': 0
         }
         # Gear inventory, max 5 items
         self.gear = []  # List to hold gear items
@@ -90,7 +91,14 @@ class Player:
         # Data over time
         self.turns = []
         self.gear_levels_over_time = []
-        self.materials_over_time = {'uncommon': [], 'rare': [], 'epic': []}
+        # Also update the materials_over_time tracking
+        self.materials_over_time = {
+            'legendary': [],
+            'epic': [],
+            'rare': [],
+            'uncommon': [],
+            'common': []
+        }
         self.completions_over_time = []
         self.win_rates_over_time = {1: [], 2: [], 3: []}
 
@@ -138,7 +146,7 @@ class Player:
 
     def purchase_lootbox(self):
         """Purchase a pity lootbox."""
-        if self.skull_tokens < 1 or self.materials['epic'] < 1 or self.materials['rare'] < 1:
+        if self.skull_tokens < 5 or self.materials['epic'] < 5 or self.materials['rare'] < 5:
             print(f"{self.name} does not have enough resources to purchase a lootbox.")
             return
         self.skull_tokens -= 1
@@ -188,8 +196,8 @@ class Player:
         gear_tier_values = self.config.gear_tier_values
         gear_level = sum([gear_tier_values[gear] for gear in self.gear])
         self.gear_levels_over_time.append(gear_level)
-        # Record materials
-        for material in ['uncommon', 'rare', 'epic']:
+        # Record materials - Updated to include all rarities
+        for material in ['legendary', 'epic', 'rare', 'uncommon', 'common']:
             self.materials_over_time[material].append(self.materials[material])
         # Record total dungeon completions
         total_completions = sum(self.dungeon_completions.values())
@@ -205,8 +213,8 @@ class Dungeon:
         self.tier = tier
         self.config = config
         self.win_probabilities = self.config.dungeon_win_probabilities
-        self.loot_drop_chances = self.config.dungeon_loot_drop_chances
-        self.material_drop_chances = self.config.dungeon_material_drop_chances
+        self.loot_drop_chances = self.config.dungeon_loot_drop_chances[tier]
+        self.material_drop_chances = self.config.dungeon_material_drop_chances[tier]
         self.pet_drop_chances = self.config.dungeon_pet_drop_chances
 
     def attempt(self, player):
@@ -224,22 +232,20 @@ class Dungeon:
 
     def roll_loot(self):
         """Roll to determine the loot rarity received."""
-        chances = self.loot_drop_chances[self.tier]
         result = random.random()
         cumulative = 0.0
-        for rarity in ['epic', 'rare', 'uncommon']:
-            cumulative += chances[rarity]
+        for rarity, chance in self.loot_drop_chances.items():
+            cumulative += chance
             if result < cumulative:
                 return rarity
         return 'uncommon'  # Default to 'uncommon'
 
     def roll_material(self):
         """Roll to determine the material rarity received."""
-        chances = self.material_drop_chances[self.tier]
         result = random.random()
         cumulative = 0.0
-        for rarity in ['epic', 'rare']:
-            cumulative += chances[rarity]
+        for rarity, chance in self.material_drop_chances.items():
+            cumulative += chance
             if result < cumulative:
                 return rarity
         return 'rare'  # Default to 'rare'
@@ -300,7 +306,7 @@ class Game:
         elif action == 'contract':
             player.complete_contract()
         # Attempt to purchase lootboxes after the main action
-        while (player.skull_tokens >= 1 and player.materials['epic'] >= 1 and player.materials['rare'] >= 1):
+        while (player.skull_tokens >= 5 and player.materials['epic'] >= 5 and player.materials['rare'] >= 5):
             player.purchase_lootbox()
 
     def run(self, days=1):
@@ -351,7 +357,7 @@ class Game:
             # Plot Materials Over Time
             with col2:
                 fig, ax = plt.subplots(figsize=(10, 6))
-                for material in ['uncommon', 'rare', 'epic']:
+                for material in ['legendary', 'epic', 'rare', 'uncommon', 'common']:
                     ax.plot(player.turns, player.materials_over_time[material], label=material.capitalize())
                 ax.set_title(f"{player.name} - Materials Over Time")
                 ax.set_xlabel("Turn")

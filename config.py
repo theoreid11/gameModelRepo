@@ -1,4 +1,3 @@
-
 class Config:
     """Configuration class to hold all adjustable parameters."""
     def __init__(self):
@@ -32,15 +31,15 @@ class Config:
         }
         # Dungeon loot drop chances per tier (should sum to 1.0 per tier)
         self.dungeon_loot_drop_chances = {
-            1: {'epic': 0.0, 'rare': 0.26, 'uncommon': 0.74},
-            2: {'epic': 0.2, 'rare': 0.5, 'uncommon': 0.3},
-            3: {'epic': 0.4, 'rare': 0.5, 'uncommon': 0.1}
+            1: {'legendary': 0.02, 'epic': 0.09, 'rare': 0.15, 'uncommon': 0.74, 'common': 0.0},
+            2: {'legendary': 0.02, 'epic': 0.09, 'rare': 0.15, 'uncommon': 0.74, 'common': 0.0},
+            3: {'legendary': 0.02, 'epic': 0.09, 'rare': 0.15, 'uncommon': 0.74, 'common': 0.0}
         }
         # Dungeon material drop chances per tier
         self.dungeon_material_drop_chances = {
-            1: {'epic': 0.1, 'rare': 0.9},
-            2: {'epic': 0.2, 'rare': 0.8},
-            3: {'epic': 0.4, 'rare': 0.6}
+            1: {'legendary': 0.02, 'epic': 0.09, 'rare': 0.15, 'uncommon': 0.74, 'common': 0.0},
+            2: {'legendary': 0.02, 'epic': 0.09, 'rare': 0.15, 'uncommon': 0.74, 'common': 0.0},
+            3: {'legendary': 0.02, 'epic': 0.09, 'rare': 0.15, 'uncommon': 0.74, 'common': 0.0}
         }
         # Dungeon pet drop chances per tier
         self.dungeon_pet_drop_chances = {
