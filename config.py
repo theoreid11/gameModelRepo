@@ -14,16 +14,15 @@ class Config:
         # Lootbox pet drop chance
         self.lootbox_pet_drop_chance = 0.01
 
-        # Gear bonus values
+        # Gear bonus values (now configurable)
         self.gear_bonus_values = {
             'legendary': 0.05,  
             'epic': 0.03,       
             'rare': 0.02,       
             'uncommon': 0.01    
         }
-        self.max_gear_bonus = 0.20  # Max total gear bonus (e.g., 20%)
 
-        # Dungeon win probabilities per tier
+        # Dungeon win probabilities per tier (now configurable)
         self.dungeon_win_probabilities = {
             1: 0.8,  # Tier 1
             2: 0.6,  # Tier 2

@@ -183,9 +183,6 @@ class Player:
         for gear_rarity in self.gear:
             bonus_per_gear = gear_bonus_values.get(gear_rarity, 0)
             total_bonus += bonus_per_gear
-        # Cap the bonus to prevent it from becoming too high
-        max_bonus = self.config.max_gear_bonus
-        total_bonus = min(total_bonus, max_bonus)
         return total_bonus
 
     def record_stats(self, turn_number):
