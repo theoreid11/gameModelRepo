@@ -103,9 +103,14 @@ class Player:
         self.win_rates_over_time = {1: [], 2: [], 3: []}
 
     def reset_daily_resources(self):
-        """Reset daily resources."""
-        self.yoku = 3
-        self.pioneer_points = 6
+        """Reset daily resources - no longer used."""
+        pass  # Remove the daily reset since we're using a round-based system
+
+    def add_periodic_resources(self):
+        """Add resources every 6 rounds."""
+        self.yoku += 1
+        self.pioneer_points += 2
+        print(f"{self.name} received 1 yoku and 2 pioneer points.")
 
     def attempt_dungeon(self, dungeon):
         """Attempt a dungeon run."""
@@ -267,22 +272,27 @@ class Game:
     def start_day(self):
         """Initialize resources at the start of each day."""
         print(f"\nStarting Day {self.current_day}")
-        for player in self.players:
-            player.reset_daily_resources()
         self.current_round = 1
 
     def play_round(self):
         """Execute a single round."""
         print(f"\nRound {self.current_round} of Day {self.current_day}")
+        
+        # Add periodic resources every 6 rounds
+        if self.total_turns > 0 and self.total_turns % 6 == 0:
+            for player in self.players:
+                player.add_periodic_resources()
+        
         for player in self.players:
             self.play_turn(player)
             # Record stats after each player's turn
             player.record_stats(self.total_turns)
+            
         self.current_round += 1
         self.total_turns += 1
         if self.current_round > self.rounds_per_day:
             self.current_day += 1
-            self.start_day()
+            self.current_round = 1
 
     def play_turn(self, player):
         """Player's action for their turn."""

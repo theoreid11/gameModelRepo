@@ -5,6 +5,15 @@ from config import Config
 from classes import Contract,Lootbox,Player,Dungeon,Game
 
 # Function to create a Streamlit sidebar for user input
+def normalize_probabilities(probabilities):
+    """Normalize probabilities to sum to 1.0"""
+    total = sum(probabilities.values())
+    if total == 0:
+        # If all values are 0, set equal probabilities
+        num_items = len(probabilities)
+        return {k: 1.0/num_items for k in probabilities}
+    return {k: v/total for k, v in probabilities.items()}
+
 def user_input():
     st.sidebar.header("Game Configuration")
 
@@ -15,16 +24,29 @@ def user_input():
 
     # Input fields for Contract drop chances
     with st.sidebar.expander("Contract Drop Chances", expanded=False):
-        contract_material_drop_epic = st.slider("Contract: Epic Material Drop Chance", 0.0, 1.0, 0.11)
-        contract_material_drop_rare = st.slider("Contract: Rare Material Drop Chance", 0.0, 1.0, 0.89)
+        contract_probs = {
+            'epic': st.slider("Contract: Epic Material Drop Chance", 0.0, 1.0, 0.11),
+            'rare': st.slider("Contract: Rare Material Drop Chance", 0.0, 1.0, 0.89)
+        }
+        contract_material_drop_chances = normalize_probabilities(contract_probs)
+        st.text("Normalized probabilities (sum = 1.0):")
+        for k, v in contract_material_drop_chances.items():
+            st.text(f"{k}: {v:.3f}")
 
     # Input fields for Lootbox drop chances
     with st.sidebar.expander("Lootbox Drop Chances", expanded=False):
-        lootbox_loot_drop_legendary = st.slider("Lootbox: Legendary Drop Chance", 0.0, 1.0, 0.02)
-        lootbox_loot_drop_epic = st.slider("Lootbox: Epic Drop Chance", 0.0, 1.0, 0.09)
-        lootbox_loot_drop_rare = st.slider("Lootbox: Rare Drop Chance", 0.0, 1.0, 0.15)
-        lootbox_loot_drop_uncommon = st.slider("Lootbox: Uncommon Drop Chance", 0.0, 1.0, 0.74)
-        lootbox_loot_drop_common = st.slider("Lootbox: Common Drop Chance", 0.0, 1.0, 0.0)
+        lootbox_probs = {
+            'legendary': st.slider("Lootbox: Legendary Drop Chance", 0.0, 1.0, 0.02),
+            'epic': st.slider("Lootbox: Epic Drop Chance", 0.0, 1.0, 0.09),
+            'rare': st.slider("Lootbox: Rare Drop Chance", 0.0, 1.0, 0.15),
+            'uncommon': st.slider("Lootbox: Uncommon Drop Chance", 0.0, 1.0, 0.74),
+            'common': st.slider("Lootbox: Common Drop Chance", 0.0, 1.0, 0.0)
+        }
+        lootbox_loot_drop_chances = normalize_probabilities(lootbox_probs)
+        st.text("Normalized probabilities (sum = 1.0):")
+        for k, v in lootbox_loot_drop_chances.items():
+            st.text(f"{k}: {v:.3f}")
+
     # Base completion rates per tier
     with st.sidebar.expander("Base Completion Rates", expanded=False):
         base_completion_rates = {
@@ -49,25 +71,33 @@ def user_input():
     dungeon_material_drop_chances = {}
     for tier in [1, 2, 3]:
         with st.sidebar.expander(f"Tier {tier} Material Drop Chances", expanded=False):
-            dungeon_material_drop_chances[tier] = {
+            tier_probs = {
                 'legendary': st.slider(f"T{tier} Material: Legendary", 0.0, 1.0, 0.02),
                 'epic': st.slider(f"T{tier} Material: Epic", 0.0, 1.0, 0.09),
                 'rare': st.slider(f"T{tier} Material: Rare", 0.0, 1.0, 0.15),
                 'uncommon': st.slider(f"T{tier} Material: Uncommon", 0.0, 1.0, 0.74),
                 'common': st.slider(f"T{tier} Material: Common", 0.0, 1.0, 0.0)
             }
+            dungeon_material_drop_chances[tier] = normalize_probabilities(tier_probs)
+            st.text("Normalized probabilities (sum = 1.0):")
+            for k, v in dungeon_material_drop_chances[tier].items():
+                st.text(f"{k}: {v:.3f}")
 
     # Dungeon Loot Drop Chances per Tier
     dungeon_loot_drop_chances = {}
     for tier in [1, 2, 3]:
         with st.sidebar.expander(f"Tier {tier} Loot Drop Chances", expanded=False):
-            dungeon_loot_drop_chances[tier] = {
+            tier_probs = {
                 'legendary': st.slider(f"T{tier} Loot: Legendary", 0.0, 1.0, 0.02),
                 'epic': st.slider(f"T{tier} Loot: Epic", 0.0, 1.0, 0.09),
                 'rare': st.slider(f"T{tier} Loot: Rare", 0.0, 1.0, 0.15),
                 'uncommon': st.slider(f"T{tier} Loot: Uncommon", 0.0, 1.0, 0.74),
                 'common': st.slider(f"T{tier} Loot: Common", 0.0, 1.0, 0.0)
             }
+            dungeon_loot_drop_chances[tier] = normalize_probabilities(tier_probs)
+            st.text("Normalized probabilities (sum = 1.0):")
+            for k, v in dungeon_loot_drop_chances[tier].items():
+                st.text(f"{k}: {v:.3f}")
 
     
     return {
@@ -75,17 +105,8 @@ def user_input():
             'rounds_per_day': rounds_per_day,
             'simulation_days': simulation_days
         },
-        'contract_material_drop_chances': {
-            'epic': contract_material_drop_epic,
-            'rare': contract_material_drop_rare
-        },
-        'lootbox_loot_drop_chances': {
-            'legendary': lootbox_loot_drop_legendary,
-            'epic': lootbox_loot_drop_epic,
-            'rare': lootbox_loot_drop_rare,
-            'uncommon': lootbox_loot_drop_uncommon,
-            'common': lootbox_loot_drop_common
-        },
+        'contract_material_drop_chances': contract_material_drop_chances,
+        'lootbox_loot_drop_chances': lootbox_loot_drop_chances,
         'dungeon_material_drop_chances': dungeon_material_drop_chances,
         'dungeon_loot_drop_chances': dungeon_loot_drop_chances,
         'gear_bonus_values': gear_bonus_values,
@@ -93,7 +114,7 @@ def user_input():
     }
 
 def main():
-    st.title("Dungeon Game Simulator")
+    st.title("Game Loop Simulator")
 
     # Get user input
     user_config = user_input()
