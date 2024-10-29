@@ -2,6 +2,8 @@
 import random 
 import matplotlib.pyplot as plt
 import seaborn as sns
+import streamlit as st
+
 class Contract:
     def __init__(self, config):
         self.config = config
@@ -329,45 +331,52 @@ class Game:
             overall_completion_rate = (total_completions / total_attempts * 100) if total_attempts > 0 else 0
             print(f"Overall Dungeon Completion Rate: {overall_completion_rate:.2f}%")
             
-    def plot_stats(player):
+    def plot_stats(self):
         """Plot the stats collected over time using matplotlib and seaborn."""
         sns.set_theme(style="darkgrid")
-        
-        # Gear Level Over Time
-        plt.figure(figsize=(10, 6))
-        plt.plot(player.turns, player.gear_levels_over_time, marker='o')
-        plt.title(f"{player.name} - Gear Level Over Time")
-        plt.xlabel("Turn")
-        plt.ylabel("Gear Level (Sum of Gear Tiers)")
-        st.pyplot(plt)
-        plt.clf()  # Clear the figure
+        for player in self.players:
+            # Split columns for side-by-side display
+            col1, col2 = st.columns(2)
 
-        # Materials Over Time
-        plt.figure(figsize=(10, 6))
-        for material in ['uncommon', 'rare', 'epic']:
-            plt.plot(player.turns, player.materials_over_time[material], label=material.capitalize())
-        plt.title(f"{player.name} - Materials Over Time")
-        plt.xlabel("Turn")
-        plt.ylabel("Quantity")
-        plt.legend()
-        st.pyplot(plt)
-        plt.clf()
+            # Plot Gear Level Over Time
+            with col1:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.plot(player.turns, player.gear_levels_over_time, marker='o')
+                ax.set_title(f"{player.name} - Gear Level Over Time")
+                ax.set_xlabel("Turn")
+                ax.set_ylabel("Gear Level (Sum of Gear Tiers)")
+                st.pyplot(fig)
+                plt.clf()
 
-        # Dungeon Completions Over Time
-        plt.figure(figsize=(10, 6))
-        plt.plot(player.turns, player.completions_over_time, marker='o')
-        plt.title(f"{player.name} - Total Dungeon Completions Over Time")
-        plt.xlabel("Turn")
-        plt.ylabel("Total Completions")
-        st.pyplot(plt)
-        plt.clf()
+            # Plot Materials Over Time
+            with col2:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                for material in ['uncommon', 'rare', 'epic']:
+                    ax.plot(player.turns, player.materials_over_time[material], label=material.capitalize())
+                ax.set_title(f"{player.name} - Materials Over Time")
+                ax.set_xlabel("Turn")
+                ax.set_ylabel("Quantity")
+                ax.legend()
+                st.pyplot(fig)
+                plt.clf()
 
-        # Win Rates Per Tier Over Time
-        for tier in [1, 2, 3]:
-            plt.figure(figsize=(10, 6))
-            plt.plot(player.turns, player.win_rates_over_time[tier], marker='o')
-            plt.title(f"{player.name} - Win Rate Over Time for Tier {tier}")
-            plt.xlabel("Turn")
-            plt.ylabel("Win Rate (%)")
-            st.pyplot(plt)
-            plt.clf()
+            # Plot Dungeon Completions Over Time
+            with col2:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.plot(player.turns, player.completions_over_time, marker='o')
+                ax.set_title(f"{player.name} - Total Dungeon Completions Over Time")
+                ax.set_xlabel("Turn")
+                ax.set_ylabel("Total Completions")
+                st.pyplot(fig)
+                plt.clf()
+
+            # Plot Win Rates Per Tier Over Time
+            for tier in [1, 2, 3]:
+                with col1:
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    ax.plot(player.turns, player.win_rates_over_time[tier], marker='o')
+                    ax.set_title(f"{player.name} - Win Rate Over Time for Tier {tier}")
+                    ax.set_xlabel("Turn")
+                    ax.set_ylabel("Win Rate (%)")
+                    st.pyplot(fig)
+                    plt.clf()

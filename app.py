@@ -39,6 +39,7 @@ def main():
     # Create Config object with user-defined parameters
     config = Config()
     config.contract_material_drop_chances = user_config['contract_material_drop_chances']
+
     config.lootbox_loot_drop_chances = user_config['lootbox_loot_drop_chances']
 
     players = [Player("Alice", config), Player("Bob", config)]
