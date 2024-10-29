@@ -113,28 +113,100 @@ def user_input():
         'dungeon_win_probabilities': base_completion_rates
     }
 
+def show_rules():
+    st.header("Game Rules & Mechanics")
+
+    st.subheader("Basic Resources")
+    st.write("""
+    - Players start with 3 Yoku and 6 Pioneer Points
+    - Every 6 rounds, players receive:
+        - 1 Yoku
+        - 2 Pioneer Points
+    """)
+
+    st.subheader("Activities")
+    with st.expander("Contracts"):
+        st.write("""
+        - Costs 3 Pioneer Points
+        - Rewards:
+            - 1 Yoku
+            - 1 Material (Epic or Rare)
+        """)
+
+    with st.expander("Dungeons"):
+        st.write("""
+        - Costs 1 Yoku to attempt
+        - Success rewards:
+            - 1 Pioneer Point
+            - 1 Skull Token
+            - 1 Piece of Gear
+            - 1 Material
+            - Chance for a Pet
+        - Success chance = Base Rate + Gear Bonus (capped at 95%)
+        - Three difficulty tiers with different drop rates and success chances
+        """)
+
+    with st.expander("Lootboxes"):
+        st.write("""
+        - Costs:
+            - 5 Skull Tokens
+            - 5 Epic Materials
+            - 5 Rare Materials
+        - Rewards:
+            - 1 Piece of Gear
+            - Chance for a Pet
+        """)
+
+    st.subheader("Gear System")
+    st.write("""
+    - Maximum 5 gear pieces equipped
+    - When receiving new gear:
+        - If inventory not full: automatically equip
+        - If full: replaces lowest tier gear if new gear is better
+    - Each gear piece provides a bonus to dungeon success rate
+    - Gear tiers (from lowest to highest):
+        1. Uncommon
+        2. Rare
+        3. Epic
+        4. Legendary
+    """)
+
+    st.subheader("Player Behavior")
+    st.write("""
+    - Players will attempt dungeons if they have Yoku
+    - Players will complete contracts if they have enough Pioneer Points
+    - Players will purchase lootboxes whenever they have enough resources
+    - Dungeon tier selection is random
+    """)
+
 def main():
     st.title("Game Loop Simulator")
-
-    # Get user input
-    user_config = user_input()
     
-    # Create Config object with user-defined parameters
-    config = Config()
-    config.contract_material_drop_chances = user_config['contract_material_drop_chances']
-    config.lootbox_loot_drop_chances = user_config['lootbox_loot_drop_chances']
-    config.dungeon_material_drop_chances = user_config['dungeon_material_drop_chances']
-    config.dungeon_loot_drop_chances = user_config['dungeon_loot_drop_chances']
-    config.gear_bonus_values = user_config['gear_bonus_values']
-    config.dungeon_win_probabilities = user_config['dungeon_win_probabilities']
+    # Create tabs
+    tab1, tab2 = st.tabs(["Simulation", "Rules"])
+    
+    with tab1:
+        # Your existing simulation code
+        user_config = user_input()
+        
+        config = Config()
+        config.contract_material_drop_chances = user_config['contract_material_drop_chances']
+        config.lootbox_loot_drop_chances = user_config['lootbox_loot_drop_chances']
+        config.dungeon_material_drop_chances = user_config['dungeon_material_drop_chances']
+        config.dungeon_loot_drop_chances = user_config['dungeon_loot_drop_chances']
+        config.gear_bonus_values = user_config['gear_bonus_values']
+        config.dungeon_win_probabilities = user_config['dungeon_win_probabilities']
 
-    players = [Player("Alice", config), Player("Bob", config)]
-    game = Game(players, config, rounds_per_day=user_config['simulation_settings']['rounds_per_day'])
+        players = [Player("Alice", config), Player("Bob", config)]
+        game = Game(players, config, rounds_per_day=user_config['simulation_settings']['rounds_per_day'])
 
-    if st.button("Run Simulation"):
-        game.run(days=user_config['simulation_settings']['simulation_days'])
-        game.display_stats()
-        game.plot_stats()
+        if st.button("Run Simulation"):
+            game.run(days=user_config['simulation_settings']['simulation_days'])
+            game.display_stats()
+            game.plot_stats()
+    
+    with tab2:
+        show_rules()
 
 if __name__ == "__main__":
     main()
