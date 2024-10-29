@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Environment files
+.env
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+*.env
+
+# Streamlit cache
+.streamlit/cache/
+.streamlit/secrets.toml
+
+# Jupyter Notebook checkpoints (if any)
+.ipynb_checkpoints
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Pytest cache
+.pytest_cache/
+
+# VS Code settings
+.vscode/
