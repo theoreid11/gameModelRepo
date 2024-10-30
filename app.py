@@ -142,7 +142,7 @@ def show_rules():
             - 1 Piece of Gear
             - 1 Material
             - Chance for a Pet
-        - Success chance = Base Rate + Gear Bonus (capped at 95%)
+        - Success chance = Base Rate + Gear Bonus 
         - Three difficulty tiers with different drop rates and success chances
         """)
 

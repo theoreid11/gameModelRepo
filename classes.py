@@ -261,8 +261,6 @@ class Dungeon:
         base_win_chance = self.win_probabilities[self.tier]
         gear_bonus = player.calculate_gear_bonus()
         total_win_chance = base_win_chance + gear_bonus
-        # Cap the total win chance at 95%
-        total_win_chance = min(total_win_chance, 0.95)
         result = random.random()
         success = result < total_win_chance
         print(f"{player.name}'s chance to win was {total_win_chance * 100:.2f}% "
