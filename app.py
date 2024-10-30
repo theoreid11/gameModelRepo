@@ -3,7 +3,7 @@ import random
 import streamlit as st
 from config import Config
 from classes import Contract,Lootbox,Player,Dungeon,Game
-
+import pandas as pd
 # Function to create a Streamlit sidebar for user input
 def normalize_probabilities(probabilities):
     """Normalize probabilities to sum to 1.0"""
@@ -220,16 +220,57 @@ def player_input():
     
     return players
 
+def show_player_stats(game):
+    # Initialize session state for game data if not exists
+    if 'game_data' not in st.session_state:
+        st.session_state.game_data = game
+    
+    # Create a dropdown to select player
+    player_names = [player.name for player in st.session_state.game_data.players]
+    selected_player_name = st.selectbox('Select Player', player_names, key='player_selector')
+    
+    # Find the selected player object
+    selected_player = next((p for p in st.session_state.game_data.players if p.name == selected_player_name), None)
+    
+    if selected_player:
+        # Create three columns for different stat categories
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.subheader("Gear")
+            gear_df = pd.DataFrame(
+                [(gear, selected_player.config.gear_tier_values[gear]) 
+                 for gear in selected_player.gear],
+                columns=['Item', 'Tier']
+            )
+            st.dataframe(gear_df)
+        
+        with col2:
+            st.subheader("Materials")
+            materials_df = pd.DataFrame(
+                selected_player.materials.items(),
+                columns=['Material', 'Quantity']
+            )
+            st.dataframe(materials_df)
+        
+        with col3:
+            st.subheader("Pets")
+            pets_df = pd.DataFrame(
+                [(pet, 1) for pet in selected_player.pets],  # Assuming level 1 for all pets
+                columns=['Pet', 'Level']
+            )
+            st.dataframe(pets_df)
+
 def main():
     st.title("Game Loop Simulator")
     
     # Create tabs
-    tab1, tab2, tab3 = st.tabs(["Player Setup", "Simulation", "Rules"])
-    
-    with tab1:
-        players_config = player_input()
+    tab1, tab2, tab3 = st.tabs(["Rules","Player Setup", "Simulation" ])
     
     with tab2:
+        players_config = player_input()
+    
+    with tab3:
         # Your existing simulation code
         user_config = user_input()
         
@@ -262,8 +303,14 @@ def main():
             game.run(days=user_config['simulation_settings']['simulation_days'])
             game.display_stats()
             game.plot_stats()
+            # Store game state after simulation
+            st.session_state.game_data = game
+        
+        # Show player stats if we have game data (separate from simulation run)
+        if 'game_data' in st.session_state:
+            show_player_stats(st.session_state.game_data)
     
-    with tab3:
+    with tab1:
         show_rules()
 
 if __name__ == "__main__":
