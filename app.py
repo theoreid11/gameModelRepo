@@ -203,7 +203,7 @@ def show_rules():
     - Players will attempt dungeons if they have Yoku
     - Players will complete contracts if they have enough Pioneer Points
     - Players will purchase lootboxes whenever they have enough resources
-    - Dungeon tier selection is random
+    - Dungeon tier selection is based on probability weighted by gear level. This can be configured in the sidebar.
     """)
 
 def player_input():
