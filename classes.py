@@ -8,18 +8,18 @@ class Contract:
         self.config = config
         self.material_drop_chances = self.config.contract_material_drop_chances
 
-    def complete(self, player):
+    def complete(self, player, game):
         """Complete a contract."""
         if player.pioneer_points < 3:
-            print(f"{player.name} does not have enough pioneer points to complete a contract.")
+            game.log_action(f"{player.name} does not have enough pioneer points to complete a contract")
             return
-        player.pioneer_points -= 3  # Costs 3 pioneer points
-        player.yoku += 1  # Rewards 1 yoku
-        print(f"{player.name} completed a contract and earned 1 yoku.")
+        player.pioneer_points -= 3
+        player.yoku += 1
+        game.log_action(f"{player.name} completed a contract and earned 1 yoku")
         # Roll for material
         material_rarity = self.roll_material()
         player.materials[material_rarity] += 1
-        print(f"{player.name} received {material_rarity} material from the contract.")
+        game.log_action(f"{player.name} received {material_rarity} material from the contract")
 
     def roll_material(self):
         """Roll for material reward."""
@@ -38,16 +38,16 @@ class Lootbox:
         self.loot_drop_chances = self.config.lootbox_loot_drop_chances
         self.pet_drop_chance = self.config.lootbox_pet_drop_chance
 
-    def open(self, player):
+    def open(self, player, game):
         """Open the lootbox and grant rewards to the player."""
         # Roll for loot
         loot_rarity = self.roll_loot()
-        player.add_gear(loot_rarity)
+        player.add_gear(loot_rarity, game)
         # Roll for pet
         pet_received = self.roll_pet()
         if pet_received:
             player.pets.append(pet_received)
-            print(f"{player.name} received a pet from the lootbox: {pet_received}.")
+            game.log_action(f"{player.name} received a pet from the lootbox: {pet_received}")
 
     def roll_loot(self):
         """Roll to determine loot received from a lootbox."""
@@ -112,50 +112,50 @@ class Player:
         """Reset daily resources - no longer used."""
         pass  # Removed the daily reset since we use round based system
 
-    def add_periodic_resources(self):
+    def add_periodic_resources(self, game):
         """Add resources every 6 rounds."""
         self.yoku += 1
         self.pioneer_points += 2
-        print(f"{self.name} received 1 yoku and 2 pioneer points.")
+        game.log_action(f"{self.name} received 1 yoku and 2 pioneer points")
 
-    def attempt_dungeon(self, dungeon):
+    def attempt_dungeon(self, dungeon, game):
         """Attempt a dungeon run."""
         if self.yoku < 1:
-            print(f"{self.name} does not have enough yoku to enter the dungeon.")
+            game.log_action(f"{self.name} does not have enough yoku to enter the dungeon")
             return
         self.yoku -= 1  # Spend 1 yoku to enter dungeon
         self.dungeon_attempts[dungeon.tier] += 1  # Increment attempts
 
-        success = dungeon.attempt(self)
+        success = dungeon.attempt(self, game)
         if success:
             self.dungeon_completions[dungeon.tier] += 1  # Increment completions
 
-            print(f"{self.name} successfully completed Tier {dungeon.tier} dungeon!")
+            game.log_action(f"{self.name} successfully completed Tier {dungeon.tier} dungeon!")
             # Loot roll
             loot_rarity = dungeon.roll_loot()
-            self.add_gear(loot_rarity)
+            self.add_gear(loot_rarity, game)
             # Material roll
             material_rarity = dungeon.roll_material()
             self.materials[material_rarity] += 1
-            print(f"{self.name} received {material_rarity} material.")
+            game.log_action(f"{self.name} received {material_rarity} material")
             # Pet roll
             pet_received = dungeon.roll_pet()
             if pet_received:
                 self.pets.append(pet_received)
-                print(f"{self.name} received a pet: {pet_received}.")
+                game.log_action(f"{self.name} received a pet: {pet_received}")
             # Guaranteed currency for completing dungeon
             self.skull_tokens += 1
             self.pioneer_points += 1
-            print(f"{self.name} received a skull token and a pioneer credit.")
+            game.log_action(f"{self.name} received a skull token and a pioneer credit")
         else:
-            print(f"{self.name} failed to complete Tier {dungeon.tier} dungeon.")
+            game.log_action(f"{self.name} failed to complete Tier {dungeon.tier} dungeon")
 
-    def complete_contract(self):
+    def complete_contract(self, game):
         """Complete a contract using pioneer points."""
         contract = Contract(self.config)
-        contract.complete(self)
+        contract.complete(self, game)
 
-    def purchase_lootbox(self):
+    def purchase_lootbox(self, game):
         """Purchase a pity lootbox."""
         if self.skull_tokens < 5 or self.materials['epic'] < 5 or self.materials['rare'] < 5:
             print(f"{self.name} does not have enough resources to purchase a lootbox.")
@@ -166,9 +166,9 @@ class Player:
         print(f"{self.name} purchased a lootbox.")
         # Open the lootbox
         lootbox = Lootbox(self.config)
-        lootbox.open(self)
+        lootbox.open(self, game)
 
-    def add_gear(self, gear_rarity):
+    def add_gear(self, gear_rarity, game):
         """Add gear to inventory, replacing lowest tier if full."""
         gear_tier_values = self.config.gear_tier_values
         print(f"{self.name} received {gear_rarity} gear.")
@@ -176,6 +176,7 @@ class Player:
             # Add the new gear
             self.gear.append(gear_rarity)
             print(f"{self.name} equipped {gear_rarity} gear.")
+            game.log_action(f"{self.name} equipped {gear_rarity} gear")
         else:
             # Find the lowest-tier gear
             lowest_tier_gear = min(self.gear, key=lambda x: gear_tier_values[x])
@@ -184,8 +185,10 @@ class Player:
                 self.gear.remove(lowest_tier_gear)
                 self.gear.append(gear_rarity)
                 print(f"{self.name} replaced {lowest_tier_gear} gear with {gear_rarity} gear.")
+                game.log_action(f"{self.name} replaced {lowest_tier_gear} gear with {gear_rarity} gear")
             else:
                 print(f"{self.name}'s gear slots are full. {gear_rarity} gear was discarded.")
+                game.log_action(f"{self.name}'s gear slots are full. {gear_rarity} gear was discarded")
 
     def calculate_gear_bonus(self):
         """Calculate gear bonus based on equipped gear."""
@@ -256,15 +259,17 @@ class Dungeon:
         self.material_drop_chances = self.config.dungeon_material_drop_chances[tier]
         self.pet_drop_chances = self.config.dungeon_pet_drop_chances
 
-    def attempt(self, player):
+    def attempt(self, player, game):
         """Check if player wins, factoring in gear bonus."""
         base_win_chance = self.win_probabilities[self.tier]
         gear_bonus = player.calculate_gear_bonus()
         total_win_chance = base_win_chance + gear_bonus
         result = random.random()
         success = result < total_win_chance
-        print(f"{player.name}'s chance to win was {total_win_chance * 100:.2f}% "
-              f"(Base: {base_win_chance * 100:.2f}%, Gear Bonus: {gear_bonus * 100:.2f}%)")
+        game.log_action(
+            f"{player.name}'s chance to win was {total_win_chance * 100:.2f}% "
+            f"(Base: {base_win_chance * 100:.2f}%, Gear Bonus: {gear_bonus * 100:.2f}%)"
+        )
         return success
 
     def roll_loot(self):
@@ -303,20 +308,25 @@ class Game:
         self.current_round = 1
         self.rounds_per_day = rounds_per_day
         self.total_turns = 0  # To track the number of turns
+        self.action_log = []  # Add this line
+
+    def log_action(self, message):
+        """Add a message to the action log."""
+        self.action_log.append(f"[Day {self.current_day}, Round {self.current_round}] {message}")
 
     def start_day(self):
         """Initialize resources at the start of each day."""
-        print(f"\nStarting Day {self.current_day}")
+        self.log_action(f"Starting Day {self.current_day}")
         self.current_round = 1
 
     def play_round(self):
         """Execute a single round."""
-        print(f"\nRound {self.current_round} of Day {self.current_day}")
+        self.log_action(f"Starting Round {self.current_round}")
         
         # Add periodic resources every 6 rounds
         if self.total_turns > 0 and self.total_turns % 6 == 0:
             for player in self.players:
-                player.add_periodic_resources()
+                player.add_periodic_resources(self)
         
         for player in self.players:
             plays_today = player.should_play_today(self.current_day)
@@ -352,12 +362,12 @@ class Game:
         if action == 'dungeon':
             tier = random.choice([1, 2, 3])
             dungeon = Dungeon(tier, self.config)
-            player.attempt_dungeon(dungeon)
+            player.attempt_dungeon(dungeon, self)
         elif action == 'contract':
-            player.complete_contract()
+            player.complete_contract(self)
         # Attempt to purchase lootboxes after the main action
         while (player.skull_tokens >= 5 and player.materials['epic'] >= 5 and player.materials['rare'] >= 5):
-            player.purchase_lootbox()
+            player.purchase_lootbox(self)
 
     def run(self, days=1):
         """Run the game for a specified number of days."""

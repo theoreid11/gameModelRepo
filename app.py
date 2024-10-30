@@ -186,18 +186,35 @@ def player_input():
     players = []
     num_players = st.number_input("Number of Players", min_value=1, max_value=5, value=2)
     
+    # Define archetypes
+    archetypes = {
+        "No-Life": (100, 1),
+        "Hardcore": (70, 1),
+        "Casual": (30, 2),
+        "Ultra Casual": (20, 5)
+    }
+    
     for i in range(num_players):
         with st.expander(f"Player {i+1} Settings", expanded=True):
             name = st.text_input(f"Player {i+1} Name", 
                                value=f"Player {i+1}",
                                key=f"name_{i}")
             
+            # Archetype selection
+            archetype = st.selectbox(
+                "Select Archetype", 
+                options=list(archetypes.keys()), 
+                index=0, 
+                key=f"archetype_{i}"
+            )
+            activity_level, play_frequency = archetypes[archetype]
+            
             # Activity level (what % of possible rounds they play)
             activity_level = st.slider(
                 "Activity Level (% of daily rounds played)", 
                 min_value=0, 
                 max_value=100, 
-                value=100, 
+                value=activity_level,  # Set default based on archetype
                 help="Percentage of available daily rounds the player will participate in",
                 key=f"activity_{i}"  # Add unique key
             )
@@ -207,7 +224,7 @@ def player_input():
                 "Play Frequency (days between sessions)", 
                 min_value=1, 
                 max_value=7, 
-                value=1, 
+                value=play_frequency,  # Set default based on archetype
                 help="1 = plays every day, 2 = plays every other day, etc.",
                 key=f"frequency_{i}"  # Add unique key
             )
@@ -265,7 +282,7 @@ def main():
     st.title("Game Loop Simulator")
     
     # Create tabs
-    tab1, tab2, tab3 = st.tabs(["Rules","Player Setup", "Simulation" ])
+    tab1, tab2, tab3, tab4 = st.tabs(["Rules", "Player Setup", "Simulation", "Action Log"])
     
     with tab2:
         players_config = player_input()
@@ -312,6 +329,25 @@ def main():
     
     with tab1:
         show_rules()
+    
+    with tab4:
+        if 'game_data' in st.session_state:
+            st.header("Action Log")
+            # Add a search/filter box
+            search_term = st.text_input("Filter log messages", "")
+            
+            # Filter messages based on search term
+            filtered_logs = st.session_state.game_data.action_log
+            if search_term:
+                filtered_logs = [msg for msg in filtered_logs if search_term.lower() in msg.lower()]
+            
+            # Display logs in a scrollable container
+            log_container = st.container()
+            with log_container:
+                for message in filtered_logs:
+                    st.text(message)
+        else:
+            st.info("Run a simulation to see the action log")
 
 if __name__ == "__main__":
     main()
