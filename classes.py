@@ -358,16 +358,58 @@ class Game:
         if not choices:
             print(f"{player.name} has no actions to take this turn.")
             return
+        
         action = random.choice(choices)
         if action == 'dungeon':
-            tier = random.choice([1, 2, 3])
-            dungeon = Dungeon(tier, self.config)
+            # Determine dungeon tier based on gear level and probabilities
+            gear_level = player.calculate_gear_bonus()
+            tier_choice = self.choose_dungeon_tier(gear_level)
+            dungeon = Dungeon(tier_choice, self.config)
             player.attempt_dungeon(dungeon, self)
         elif action == 'contract':
             player.complete_contract(self)
+        
         # Attempt to purchase lootboxes after the main action
         while (player.skull_tokens >= 5 and player.materials['epic'] >= 5 and player.materials['rare'] >= 5):
             player.purchase_lootbox(self)
+
+    def choose_dungeon_tier(self, gear_level):
+        """Choose a dungeon tier based on gear level and defined probabilities."""
+        gear_modifier_tier_1 = self.config.dungeon_choice_probabilities['tier_1']['gear_modifier']
+        gear_modifier_tier_2 = self.config.dungeon_choice_probabilities['tier_2']['gear_modifier']
+        gear_modifier_tier_3 = self.config.dungeon_choice_probabilities['tier_3']['gear_modifier']
+        # Define base probabilities for each tier
+        base_probabilities = {
+            1: 10,  # High probability for Tier 1
+            2: 5,  # Lower probability for Tier 2
+            3: 1   # Lowest probability for Tier 3
+        }
+
+        # Scale probabilities based on gear level
+        # The higher the gear level, the more likely to choose higher tiers
+        probabilities = {
+            1: base_probabilities[1],  # Increase for Tier 1
+            2: base_probabilities[2] + (gear_modifier_tier_2* gear_level),  # Increase for Tier 2
+            3: base_probabilities[3] + (gear_modifier_tier_3 * gear_level)   # Increase for Tier 3
+        }
+
+        # Normalize probabilities
+        total_probability = sum(probabilities.values())
+        if total_probability == 0:
+            return 1  # Default to Tier 1 if no valid probabilities
+
+        # Normalize the probabilities
+        probabilities = {tier: prob / total_probability for tier, prob in probabilities.items()}
+
+        # Choose a tier based on the calculated probabilities
+        random_choice = random.uniform(0, 1)
+        cumulative_probability = 0.0
+        for tier, prob in probabilities.items():
+            cumulative_probability += prob
+            if random_choice < cumulative_probability:
+                return tier
+
+        return 1  # Default to Tier 1 if something goes wrong
 
     def run(self, days=1):
         """Run the game for a specified number of days."""
@@ -446,3 +488,4 @@ class Game:
                     ax.set_ylabel("Win Rate (%)")
                     st.pyplot(fig)
                     plt.clf()
+

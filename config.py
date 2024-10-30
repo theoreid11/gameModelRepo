@@ -54,3 +54,24 @@ class Config:
             'epic': 3,
             'legendary': 4
         }
+
+        # Dungeon tier choice probabilities based on gear level thresholds
+        self.dungeon_choice_probabilities = {
+            'tier_1': {
+    
+                'probability': 10  # Base probability of choosing Tier 1
+            },
+            'tier_2': {
+  
+                'probability': 5  # Base probability of choosing Tier 2
+            },
+            'tier_3': {
+     
+                'probability': 1  # Base probability of choosing Tier 3
+            }
+        }
+
+    def update_dungeon_choice_probabilities(self, tier, threshold, probability):
+        """Update the dungeon choice probabilities for a specific tier."""
+        if tier in self.dungeon_choice_probabilities:
+            self.dungeon_choice_probabilities[tier]['probability'] = probability

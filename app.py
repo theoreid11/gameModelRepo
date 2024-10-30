@@ -4,6 +4,9 @@ import streamlit as st
 from config import Config
 from classes import Contract,Lootbox,Player,Dungeon,Game
 import pandas as pd
+# Global variable for config
+config = None
+
 # Function to create a Streamlit sidebar for user input
 def normalize_probabilities(probabilities):
     """Normalize probabilities to sum to 1.0"""
@@ -64,8 +67,8 @@ def user_input():
             'uncommon': st.slider("Uncommon Gear Bonus", 0.0, 0.10, 0.01)
         }
 
-    # Input fields for Dungeon drop chances
-    st.sidebar.subheader("Dungeon Drop Chances")
+    # Dungeon tier choice probabilities
+    st.sidebar.subheader("Dungeon Tier Choice Probabilities")
     
     # Dungeon Material Drop Chances per Tier
     dungeon_material_drop_chances = {}
@@ -99,7 +102,26 @@ def user_input():
             for k, v in dungeon_loot_drop_chances[tier].items():
                 st.text(f"{k}: {v:.3f}")
 
+    # Dungeon tier choice probabilities
+    st.sidebar.subheader("Dungeon Tier Choice Probabilities")
     
+    # Dungeon tier choice probabilities in a collapsible section
+    with st.sidebar.expander("Dungeon Tier Choice Probabilities", expanded=False):
+        tier_1_probability = st.slider("Tier 1 Probability", 0, 50, 10)
+        tier_2_probability = st.slider("Tier 2 Probability", 0, 50, 5)
+        tier_3_probability = st.slider("Tier 3 Probability", 0, 50, 1)
+
+        # Gear modifiers for dungeon tier probabilities
+        gear_modifier_tier_1 = st.slider("Gear Modifier for Tier 1", 0.0, 2.0, 0.0)
+        gear_modifier_tier_2 = st.slider("Gear Modifier for Tier 2", 0.0, 2.0, 0.5)
+        gear_modifier_tier_3 = st.slider("Gear Modifier for Tier 3", 0.0, 2.0, 1.0)
+
+        # Update the config with the new values
+        config.dungeon_choice_probabilities['tier_1']['gear_modifier'] = gear_modifier_tier_1
+        config.dungeon_choice_probabilities['tier_2']['gear_modifier'] = gear_modifier_tier_2
+        config.dungeon_choice_probabilities['tier_3']['gear_modifier'] = gear_modifier_tier_3
+
+    # Return the user configuration
     return {
         'simulation_settings': {
             'rounds_per_day': rounds_per_day,
@@ -110,6 +132,11 @@ def user_input():
         'dungeon_material_drop_chances': dungeon_material_drop_chances,
         'dungeon_loot_drop_chances': dungeon_loot_drop_chances,
         'gear_bonus_values': gear_bonus_values,
+        'dungeon_choice': {
+            'tier_1': {'threshold': None, 'probability': tier_1_probability, 'gear_modifier': gear_modifier_tier_1},
+            'tier_2': {'threshold': None, 'probability': tier_2_probability, 'gear_modifier': gear_modifier_tier_2},
+            'tier_3': {'threshold': None, 'probability': tier_3_probability, 'gear_modifier': gear_modifier_tier_3}
+        },
         'dungeon_win_probabilities': base_completion_rates
     }
 
@@ -279,6 +306,9 @@ def show_player_stats(game):
             st.dataframe(pets_df)
 
 def main():
+    global config  # Declare config as global
+    config = Config()  # Initialize the config object
+
     st.title("Game Loop Simulator")
     
     # Create tabs
@@ -289,15 +319,9 @@ def main():
     
     with tab3:
         # Your existing simulation code
-        user_config = user_input()
+        user_config = user_input()  # Call user_input to get user configuration
         
-        config = Config()
-        config.contract_material_drop_chances = user_config['contract_material_drop_chances']
-        config.lootbox_loot_drop_chances = user_config['lootbox_loot_drop_chances']
-        config.dungeon_material_drop_chances = user_config['dungeon_material_drop_chances']
-        config.dungeon_loot_drop_chances = user_config['dungeon_loot_drop_chances']
-        config.gear_bonus_values = user_config['gear_bonus_values']
-        config.dungeon_win_probabilities = user_config['dungeon_win_probabilities']
+        
 
         # Create players with their individual settings
         game_players = []
