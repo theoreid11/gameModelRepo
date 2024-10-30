@@ -19,8 +19,8 @@ def user_input():
 
     # Add simulation settings
     with st.sidebar.expander("Simulation Settings", expanded=False):
-        rounds_per_day = st.slider("Rounds Per Day", 1, 20, 10)
-        simulation_days = st.slider("Number of Days", 1, 30, 10)
+        rounds_per_day = st.slider("Rounds Per Day", 1, 48, 10)
+        simulation_days = st.slider("Number of Days", 1, 180, 10)
 
     # Input fields for Contract drop chances
     with st.sidebar.expander("Contract Drop Chances", expanded=False):
@@ -179,13 +179,57 @@ def show_rules():
     - Dungeon tier selection is random
     """)
 
+def player_input():
+    """Function to handle player configuration settings"""
+    st.header("Player Configuration")
+    
+    players = []
+    num_players = st.number_input("Number of Players", min_value=1, max_value=5, value=2)
+    
+    for i in range(num_players):
+        with st.expander(f"Player {i+1} Settings", expanded=True):
+            name = st.text_input(f"Player {i+1} Name", 
+                               value=f"Player {i+1}",
+                               key=f"name_{i}")
+            
+            # Activity level (what % of possible rounds they play)
+            activity_level = st.slider(
+                "Activity Level (% of daily rounds played)", 
+                min_value=0, 
+                max_value=100, 
+                value=100, 
+                help="Percentage of available daily rounds the player will participate in",
+                key=f"activity_{i}"  # Add unique key
+            )
+            
+            # Play frequency (how often they play)
+            play_frequency = st.slider(
+                "Play Frequency (days between sessions)", 
+                min_value=1, 
+                max_value=7, 
+                value=1, 
+                help="1 = plays every day, 2 = plays every other day, etc.",
+                key=f"frequency_{i}"  # Add unique key
+            )
+            
+            players.append({
+                'name': name,
+                'activity_level': activity_level / 100.0,  # Convert to decimal
+                'play_frequency': play_frequency
+            })
+    
+    return players
+
 def main():
     st.title("Game Loop Simulator")
     
     # Create tabs
-    tab1, tab2 = st.tabs(["Simulation", "Rules"])
+    tab1, tab2, tab3 = st.tabs(["Player Setup", "Simulation", "Rules"])
     
     with tab1:
+        players_config = player_input()
+    
+    with tab2:
         # Your existing simulation code
         user_config = user_input()
         
@@ -197,15 +241,29 @@ def main():
         config.gear_bonus_values = user_config['gear_bonus_values']
         config.dungeon_win_probabilities = user_config['dungeon_win_probabilities']
 
-        players = [Player("Alice", config), Player("Bob", config)]
-        game = Game(players, config, rounds_per_day=user_config['simulation_settings']['rounds_per_day'])
+        # Create players with their individual settings
+        game_players = []
+        for p_config in players_config:
+            player = Player(
+                p_config['name'], 
+                config,
+                activity_level=p_config['activity_level'],
+                play_frequency=p_config['play_frequency']
+            )
+            game_players.append(player)
+
+        game = Game(
+            game_players, 
+            config, 
+            rounds_per_day=user_config['simulation_settings']['rounds_per_day']
+        )
 
         if st.button("Run Simulation"):
             game.run(days=user_config['simulation_settings']['simulation_days'])
             game.display_stats()
             game.plot_stats()
     
-    with tab2:
+    with tab3:
         show_rules()
 
 if __name__ == "__main__":

@@ -68,11 +68,17 @@ class Lootbox:
         else:
             return None
 class Player:
-    def __init__(self, name, config):
+    def __init__(self, name, config, activity_level=1.0, play_frequency=1):
         self.name = name
         self.config = config
-        self.yoku = 3  # Starting yoku
-        self.pioneer_points = 6  # Starting pioneer points
+        self.activity_level = activity_level  # % of rounds played (0.0 to 1.0)
+        self.play_frequency = play_frequency  # Days between play sessions
+        self.last_play_day = 0  # Track the last day played
+        self.rounds_played = 0  # Track number of rounds played
+        
+        # Initialize resources
+        self.yoku = 3
+        self.pioneer_points = 6
         self.skull_tokens = 0  # Pity system
         # Materials - Updated to include all rarities
         self.materials = {
@@ -104,7 +110,7 @@ class Player:
 
     def reset_daily_resources(self):
         """Reset daily resources - no longer used."""
-        pass  # Remove the daily reset since we're using a round-based system
+        pass  # Removed the daily reset since we use round based system
 
     def add_periodic_resources(self):
         """Add resources every 6 rounds."""
@@ -210,6 +216,37 @@ class Player:
             completions = self.dungeon_completions[tier]
             win_rate = (completions / attempts * 100) if attempts > 0 else 0
             self.win_rates_over_time[tier].append(win_rate)
+
+    def should_play_today(self, current_day):
+        """Determine if the player should play on the current day"""
+        # If it's day 1, always play
+        if current_day == 1:
+            self.last_play_day = 1
+            return True
+            
+        # Check if enough days have passed since last play day
+        days_since_last_play = current_day - self.last_play_day
+        if days_since_last_play >= self.play_frequency:
+            # Only update last_play_day at the start of a new day, not every round
+            if current_day > self.last_play_day:
+                self.last_play_day = current_day - 1  # Set to previous day
+            return True
+        return False
+
+    def should_play_round(self):
+        """Determine if the player should play this round based on activity level"""
+        # If activity level is 100%, always play
+        if self.activity_level >= 1.0:
+            return True
+            
+        # For other activity levels, calculate rounds between plays
+        if self.activity_level <= 0:
+            return False
+            
+        rounds_between_plays = int(1 / self.activity_level)
+        should_play = (self.rounds_played % rounds_between_plays) == 0
+        self.rounds_played += 1
+        return should_play
 class Dungeon:
     def __init__(self, tier, config):
         self.tier = tier
@@ -284,10 +321,18 @@ class Game:
                 player.add_periodic_resources()
         
         for player in self.players:
-            self.play_turn(player)
-            # Record stats after each player's turn
-            player.record_stats(self.total_turns)
+            plays_today = player.should_play_today(self.current_day)
             
+            if plays_today:
+                if player.should_play_round():
+                    self.play_turn(player)
+                else:
+                    print(f"{player.name} skipping round due to activity level")
+            else:
+                print(f"{player.name} not playing on day {self.current_day}")
+            
+            player.record_stats(self.total_turns)
+        
         self.current_round += 1
         self.total_turns += 1
         if self.current_round > self.rounds_per_day:
