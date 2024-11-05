@@ -2,7 +2,7 @@ import random
 
 import streamlit as st
 from config import Config
-from classes import Contract,Lootbox,Player,Dungeon,Game
+from classes import Contract,Lootbox,Player,Dungeon,Game,PlayableGame
 import pandas as pd
 # Global variable for config
 config = None
@@ -306,26 +306,28 @@ def show_player_stats(game):
             st.dataframe(pets_df)
 
 def main():
-    global config  # Declare config as global
-    config = Config()  # Initialize the config object
+    global config
+    config = Config()
 
     st.title("Game Loop Simulator")
     
     # Create tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["Rules", "Player Setup", "Simulation", "Action Log"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Rules", "Player Setup", "Simulation", "Action Log", "Play Game"])
+    
+    # Initialize players in session state if not exists
+    if 'players_config' not in st.session_state:
+        st.session_state.players_config = []
     
     with tab2:
-        players_config = player_input()
+        st.session_state.players_config = player_input()
     
     with tab3:
-        # Your existing simulation code
-        user_config = user_input()  # Call user_input to get user configuration
+        # Simulation tab
+        user_config = user_input()
         
-        
-
         # Create players with their individual settings
         game_players = []
-        for p_config in players_config:
+        for p_config in st.session_state.players_config:
             player = Player(
                 p_config['name'], 
                 config,
@@ -334,11 +336,7 @@ def main():
             )
             game_players.append(player)
 
-        game = Game(
-            game_players, 
-            config, 
-            rounds_per_day=user_config['simulation_settings']['rounds_per_day']
-        )
+        game = Game(game_players, config, rounds_per_day=user_config['simulation_settings']['rounds_per_day'])
 
         if st.button("Run Simulation"):
             game.run(days=user_config['simulation_settings']['simulation_days'])
@@ -372,6 +370,119 @@ def main():
                     st.text(message)
         else:
             st.info("Run a simulation to see the action log")
+            
+
+    with tab5:
+        if not st.session_state.players_config:
+            st.warning("Please set up players in the Player Setup tab first!")
+        else:
+            play_game(st.session_state.players_config)
+
+def play_game(players_config):
+    st.header("Play Game")
+    
+    # Initialize game state in session if not exists
+    if 'play_state' not in st.session_state:
+        st.session_state.play_state = {
+            'initialized': False,
+            'game': None,
+            'players': [],
+            'current_round': 1,
+            'current_day': 1,
+            'players_acted': set()
+        }
+    
+    # Ensure players_acted exists
+    if 'players_acted' not in st.session_state.play_state:
+        st.session_state.play_state['players_acted'] = set()
+    
+    # Game initialization
+    if not st.session_state.play_state['initialized']:
+        # Create all players from config
+        players = []
+        for player_config in players_config:
+            player = Player(
+                player_config['name'], 
+                config,
+                activity_level=player_config['activity_level'],
+                play_frequency=player_config['play_frequency']
+            )
+            players.append(player)
+        
+        if st.button("Start Game"):
+            game = PlayableGame(players, config)
+            st.session_state.play_state = {
+                'initialized': True,
+                'game': game,
+                'players': players,
+                'current_round': 1,
+                'current_day': 1,
+                'players_acted': set()
+            }
+            st.rerun()
+    
+    # Main game loop
+    else:
+        game = st.session_state.play_state['game']
+        game.current_round = st.session_state.play_state.get('current_round', 1)
+        game.current_day = st.session_state.play_state.get('current_day', 1)
+        
+        # Display round info
+        game.display_round_info()
+        
+        # Create columns for each player
+        cols = st.columns(len(game.players))
+        
+        for idx, player in enumerate(game.players):
+            with cols[idx]:
+                st.subheader(f"Player: {player.name}")
+                
+                # Check if player should play today
+                plays_today = player.should_play_today(game.current_day)
+                # Check if player should play this round
+                plays_round = player.should_play_round()
+                
+                if not plays_today:
+                    st.info(f"Not playing on day {game.current_day}")
+                    st.session_state.play_state['players_acted'].add(player.name)
+                elif not plays_round:
+                    st.info("Skipping this round")
+                    st.session_state.play_state['players_acted'].add(player.name)
+                elif player.name in st.session_state.play_state['players_acted']:
+                    st.info("Waiting for other players")
+                else:
+                    # Display player status and actions
+                    game.display_player_status(player)
+                    game.display_player_actions(player)
+        
+        # Check if all players have acted
+        all_players_acted = len(st.session_state.play_state['players_acted']) == len(game.players)
+        
+        if all_players_acted:
+            # Advance to next round
+            game.current_round += 1
+            if game.current_round > 10:  # Assuming 10 rounds per day
+                game.current_day += 1
+                game.current_round = 1
+            
+            # Reset players_acted for new round
+            st.session_state.play_state['players_acted'] = set()
+            
+            # Add periodic resources if needed
+            total_rounds = ((game.current_day - 1) * 10 + game.current_round)
+            if total_rounds % 6 == 0:
+                for player in game.players:
+                    player.add_periodic_resources(game)
+            
+            # Update session state
+            st.session_state.play_state['current_round'] = game.current_round
+            st.session_state.play_state['current_day'] = game.current_day
+            st.rerun()
+        
+        # Reset game button
+        if st.button("Reset Game"):
+            st.session_state.play_state['initialized'] = False
+            st.rerun()
 
 if __name__ == "__main__":
     main()

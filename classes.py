@@ -158,12 +158,14 @@ class Player:
     def purchase_lootbox(self, game):
         """Purchase a pity lootbox."""
         if self.skull_tokens < 5 or self.materials['epic'] < 5 or self.materials['rare'] < 5:
-            print(f"{self.name} does not have enough resources to purchase a lootbox.")
+            game.log_action(f"{self.name} does not have enough resources to purchase a lootbox")
             return
-        self.skull_tokens -= 1
-        self.materials['rare'] -= 1
-        self.materials['epic'] -= 1
-        print(f"{self.name} purchased a lootbox.")
+        
+        self.skull_tokens -= 5
+        self.materials['rare'] -= 5
+        self.materials['epic'] -= 5
+        game.log_action(f"{self.name} purchased a lootbox")
+        
         # Open the lootbox
         lootbox = Lootbox(self.config)
         lootbox.open(self, game)
@@ -488,4 +490,88 @@ class Game:
                     ax.set_ylabel("Win Rate (%)")
                     st.pyplot(fig)
                     plt.clf()
+
+class PlayableGame(Game):
+    """Extension of Game class for interactive play"""
+    def __init__(self, player, config):
+        if isinstance(player, list):
+            super().__init__(player, config)
+        else:
+            super().__init__([player], config)
+        self.action_log = []
+    
+    def display_status(self):
+        """Display current game status"""
+        st.subheader("Game Status")
+        st.write(f"Day: {self.current_day}, Round: {self.current_round}")
+        
+        if self.action_log:
+            st.subheader("Recent Actions")
+            for message in self.action_log[-5:]:
+                st.text(message)
+    
+    def display_player_status(self, player):
+        """Display current status for a specific player"""
+        st.write(f"Yoku: {player.yoku}")
+        st.write(f"Pioneer Points: {player.pioneer_points}")
+        st.write(f"Skull Tokens: {player.skull_tokens}")
+        
+        with st.expander("Materials"):
+            for material, count in player.materials.items():
+                st.write(f"{material.capitalize()}: {count}")
+        
+        with st.expander("Gear"):
+            for item in player.gear:
+                st.write(f"- {item}")
+        
+        with st.expander("Pets"):
+            if hasattr(player, 'pets') and player.pets:
+                for pet in player.pets:
+                    st.write(f"- {pet}")
+            else:
+                st.write("No pets yet")
+    
+    def display_round_info(self):
+        """Display current round information"""
+        st.header(f"Day {self.current_day} - Round {self.current_round}")
+    
+    def display_player_actions(self, player):
+        """Display available actions for a specific player"""
+        # Ensure players_acted exists in session state
+        if 'play_state' not in st.session_state:
+            st.session_state.play_state = {
+                'initialized': True,
+                'game': self,
+                'players': self.players,
+                'current_round': 1,
+                'current_day': 1,
+                'players_acted': set()
+            }
+        elif 'players_acted' not in st.session_state.play_state:
+            st.session_state.play_state['players_acted'] = set()
+        
+        # Dungeon action
+        tier = st.selectbox(f"Dungeon Tier", [1, 2, 3], key=f"dungeon_tier_{player.name}")
+        if st.button("Enter Dungeon", disabled=player.yoku < 1, key=f"dungeon_{player.name}"):
+            dungeon = Dungeon(tier, self.config)
+            player.attempt_dungeon(dungeon, self)
+            st.session_state.play_state['players_acted'].add(player.name)
+            st.rerun()
+        
+        # Contract action
+        if st.button("Complete Contract", disabled=player.pioneer_points < 3, key=f"contract_{player.name}"):
+            contract = Contract(self.config)
+            contract.complete(player, self)
+            st.session_state.play_state['players_acted'].add(player.name)
+            st.rerun()
+        
+        # Lootbox action
+        insufficient_resources = (
+            player.skull_tokens < 5 or 
+            player.materials['epic'] < 5 or 
+            player.materials['rare'] < 5
+        )
+        if st.button("Open Lootbox", disabled=insufficient_resources, key=f"lootbox_{player.name}"):
+            player.purchase_lootbox(self)
+            st.rerun()
 
