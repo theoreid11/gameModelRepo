@@ -1,4 +1,4 @@
-<h1> Dungeon Simulation Game </h1>
+<h1> Dungeon rounds Simulation </h1>
 
 This repository contains a Streamlit-based web application designed to simulate dungeon exploration, loot collection, and player progression. Players engage in activities such as completing contracts, exploring dungeons of varying difficulties, collecting gear, pets, materials, and opening lootboxes.
 
