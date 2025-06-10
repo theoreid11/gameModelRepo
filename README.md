@@ -35,6 +35,10 @@ pip install -r requirements.txt
 
 <h3> Running the App </h3>
 
+<a href="/hhttps://gamemodelsim.streamlit.app/">Link to deployed app</a> 
+
+<h4> OR </h4>
+
 Execute the Streamlit app locally:
 
 streamlit run app.py
